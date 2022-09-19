@@ -19,15 +19,16 @@ const STORAGE_KEY = "@toDos";
 const STORAGE_STATUS_KEY = "@status";
 import { Fontisto } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
+import List from "./components/list";
 
 export default function App() {
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
-  const [completed, setCompleted] = useState(false);
+  // const [completed, setCompleted] = useState(false);
   const [toDos, setToDos] = useState({});
   // 수정
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState(text)
+  // const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(text);
 
   useEffect(() => {
     loadToDos();
@@ -40,8 +41,6 @@ export default function App() {
   useEffect(() => {
     onChangeText(text);
   }, [text]);
-
-  useEffect(() => {}, [completed]);
 
   const work = async () => {
     setWorking(true);
@@ -68,11 +67,10 @@ export default function App() {
     // * 이전 todo와 새로운 todo 합치는 방법 (es6문법)
     const newToDos = {
       ...toDos,
-      [Date.now()]: { text, working, completed },
+      [Date.now()]: { text, working, completed: false, isEditing: false },
     };
 
     setToDos(newToDos);
-
     await saveToDos(newToDos);
     setText("");
   };
@@ -84,12 +82,6 @@ export default function App() {
   const loadToDos = async () => {
     const s = await AsyncStorage.getItem(STORAGE_KEY);
     setToDos(JSON.parse(s));
-    // console.log(toDos);
-  };
-
-  const editHandler = (key) => {
-    setIsEditing(true);
-    console.log(key);
   };
 
   const deleteTodo = (key) => {
@@ -99,7 +91,7 @@ export default function App() {
         text: "I'm sure",
         style: "destructive", // IOS에서만 가능. 버튼컬러 다름
         onPress: () => {
-          // 전에 들어있든 todo데이터를 새 오브젝트에 만들어서 넣음
+          // 전에 들어있던 todo데이터를 새 오브젝트에 만들어서 넣음
           // state를 mutate하면 안되기 때문에 새로운 object를 만들어 주는거임
           const newTodos = { ...toDos };
           delete newTodos[key];
@@ -108,44 +100,6 @@ export default function App() {
         },
       },
     ]);
-  };
-
-  //미션 완료 체크박스
-  const ok = (id) => {
-    console.log("클릭한 키", id);
-    let test = { ...toDos };
-
-    // 현재 todo와 지금 클릭한 키가 같다면 찾아서 밑줄
-    let temp = {};
-
-    // for (const key in test) {
-    //   if (id === key) {
-    //     toDos[key].completed = !toDos[key].completed;
-    //     console.log('ss', test[key]);
-    //   }
-    //   return test[id];
-    // }
-
-    // setToDos(test)
-
-    // console.log(toDos);
-
-    const completed = Object.keys(test).map((key) => {
-      // console.log(key);
-      if (key === id) {
-        console.log(key);
-        temp = {
-          ...temp,
-          [key]: {
-            completed: (toDos[key].completed = !toDos[key].completed),
-            text: toDos[key].text,
-            working: toDos[key].working,
-          },
-        };
-      }
-    });
-
-    console.log("completed", completed);
   };
 
   return (
@@ -188,35 +142,16 @@ export default function App() {
         {Object.keys(toDos).map((key) =>
           //눌렀을 때의 working값과 toDos의 working이 동일할 때만 보여줘!
           toDos[key].working === working ? (
-            <View style={styles.toDo} key={key}>
-              <View style={{ flexDirection: "row" }}>
-                <Text>{toDos[key].completed} </Text>
-                <TouchableOpacity
-                  onPress={() => ok(key)}
-                  style={{ marginRight: 10 }}
-                >
-                  <Fontisto
-                    name="checkbox-passive"
-                    size={18}
-                    color={theme.toDoBg}
-                  />
-                </TouchableOpacity>
-                <Text style={styles.todoText}>{String(toDos[key].text)}</Text>
-              </View>
-              <View style={{ flexDirection: "row" }}>
-                <TouchableOpacity onPress={() => editHandler(key)}>
-                  <Entypo
-                    style={{ marginRight: 10 }}
-                    name="edit"
-                    size={18}
-                    color={theme.toDoBg}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => deleteTodo(key)}>
-                  <Fontisto name="trash" size={18} color={theme.toDoBg} />
-                </TouchableOpacity>
-              </View>
-            </View>
+            <List
+              key={key}
+              id={key}
+              text={toDos[key].text}
+              completed={toDos[key].completed}
+              isEditing={toDos[key].isEditing}
+              deleteTodo={deleteTodo}
+              toDos={toDos}
+              setToDos={setToDos}
+            />
           ) : null,
         )}
       </ScrollView>
